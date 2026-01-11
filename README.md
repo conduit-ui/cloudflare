@@ -1,41 +1,70 @@
-<p align="center">
-    <img title="Laravel Zero" height="100" src="https://raw.githubusercontent.com/laravel-zero/docs/master/images/logo/laravel-zero-readme.png" alt="Laravel Zero Logo" />
-</p>
+# Cloudflare CLI
 
-<p align="center">
-  <a href="https://github.com/laravel-zero/framework/actions"><img src="https://github.com/laravel-zero/laravel-zero/actions/workflows/tests.yml/badge.svg" alt="Build Status" /></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/dt/laravel-zero/framework.svg" alt="Total Downloads" /></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/v/laravel-zero/framework.svg?label=stable" alt="Latest Stable Version" /></a>
-  <a href="https://packagist.org/packages/laravel-zero/framework"><img src="https://img.shields.io/packagist/l/laravel-zero/framework.svg" alt="License" /></a>
-</p>
+Lightweight Cloudflare management CLI built with Laravel Zero and Saloon.
 
-Laravel Zero was created by [Nuno Maduro](https://github.com/nunomaduro) and [Owen Voke](https://github.com/owenvoke), and is a micro-framework that provides an elegant starting point for your console application. It is an **unofficial** and customized version of Laravel optimized for building command-line applications.
+## Installation
 
-- Built on top of the [Laravel](https://laravel.com) components.
-- Optional installation of Laravel [Eloquent](https://laravel-zero.com/docs/database/), Laravel [Logging](https://laravel-zero.com/docs/logging/) and many others.
-- Supports interactive [menus](https://laravel-zero.com/docs/build-interactive-menus/) and [desktop notifications](https://laravel-zero.com/docs/send-desktop-notifications/) on Linux, Windows & MacOS.
-- Ships with a [Scheduler](https://laravel-zero.com/docs/task-scheduling/) and  a [Standalone Compiler](https://laravel-zero.com/docs/build-a-standalone-application/).
-- Integration with [Collision](https://github.com/nunomaduro/collision) - Beautiful error reporting
-- Follow the creator Nuno Maduro:
-    - YouTube: **[youtube.com/@nunomaduro](https://www.youtube.com/@nunomaduro)** — Videos every weekday
-    - Twitch: **[twitch.tv/enunomaduro](https://www.twitch.tv/enunomaduro)** — Streams (almost) every weekday
-    - Twitter / X: **[x.com/enunomaduro](https://x.com/enunomaduro)**
-    - LinkedIn: **[linkedin.com/in/nunomaduro](https://www.linkedin.com/in/nunomaduro)**
-    - Instagram: **[instagram.com/enunomaduro](https://www.instagram.com/enunomaduro)**
-    - Tiktok: **[tiktok.com/@enunomaduro](https://www.tiktok.com/@enunomaduro)**
+```bash
+git clone https://github.com/conduit-ui/cloudflare.git
+cd cloudflare
+composer install
+cp .env.example .env
+```
 
-------
+## Configuration
 
-## Documentation
+Edit `.env`:
+```bash
+CLOUDFLARE_API_TOKEN=your_token_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+```
 
-For full documentation, visit [laravel-zero.com](https://laravel-zero.com/).
+Get credentials from:
+- **API Token**: https://dash.cloudflare.com/profile/api-tokens
+- **Account ID**: Right sidebar on any zone page
 
-## Support the development
-**Do you like this project? Support it by donating**
+### Token Permissions
 
-- PayPal: [Donate](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=66BYDWAT92N6L)
-- Patreon: [Donate](https://www.patreon.com/nunomaduro)
+| Command | Required Permission |
+|---------|---------------------|
+| `zones` | Zone:Read |
+| `dns:*` | DNS:Edit |
+| `tunnel:*` | Cloudflare Tunnel:Edit |
+
+## Commands
+
+### Zones
+```bash
+./cf zones                    # List all zones
+./cf zones --json             # JSON output
+```
+
+### DNS Records
+```bash
+./cf dns:list <zone>                        # List records (zone ID or domain)
+./cf dns:list jordanpartridge.us --type=A   # Filter by type
+./cf dns:create <zone> A api 1.2.3.4        # Create A record
+./cf dns:create <zone> CNAME www example.com --proxied
+```
+
+### Tunnels
+```bash
+./cf tunnel:list              # List all tunnels
+./cf tunnel:create <name>     # Create tunnel
+./cf tunnel:delete <id>       # Delete tunnel
+```
+
+## Architecture
+
+```
+app/
+├── Commands/                    # CLI commands
+├── Integrations/Cloudflare/
+│   ├── CloudflareConnector.php  # Saloon connector
+│   ├── Resources/               # API resource classes
+│   └── Requests/                # Individual API requests
+```
 
 ## License
 
-Laravel Zero is an open-source software licensed under the MIT license.
+MIT
