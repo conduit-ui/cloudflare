@@ -16,9 +16,9 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "laravel-zero/framework": "^12.0.2",
-        "saloonphp/laravel-plugin": "^3.8",
+        "php": "^8.3",
+        "laravel-zero/framework": "^13.0",
+        "saloonphp/laravel-plugin": "^3.11",
         "saloonphp/saloon": "^3.14"
     },
     "require-dev": {
