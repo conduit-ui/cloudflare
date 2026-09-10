@@ -63,8 +63,6 @@ it('sends configure through the tunnel resource', function () {
     expect($response->successful())->toBeTrue()
         ->and($response->json('result.ok'))->toBeTrue();
 
-    $mock->assertSent(function (Request $request) {
-        return $request instanceof UpdateTunnelConfiguration
-            && $request->resolveEndpoint() === '/accounts/acct/cfd_tunnel/tunnel-id/configurations';
-    });
+    $mock->assertSent(fn (Request $request) => $request instanceof UpdateTunnelConfiguration
+        && $request->resolveEndpoint() === '/accounts/acct/cfd_tunnel/tunnel-id/configurations');
 });

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Local merge gate — same fail-closed set quality-runners runs on the PR.
+# House PR quality is synapse-sentinel/quality-runners, not GitHub Actions.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "== Pint =="
+vendor/bin/pint --test
+
+echo "== PHPStan =="
+vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+
+echo "== Rector =="
+vendor/bin/rector --dry-run --no-progress-bar
+
+echo "== Pest =="
+vendor/bin/pest --compact

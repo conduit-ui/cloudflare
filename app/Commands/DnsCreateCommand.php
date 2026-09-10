@@ -30,6 +30,7 @@ class DnsCreateCommand extends Command
             $zoneId = $this->resolveZoneId($connector, $zone);
             if (! $zoneId) {
                 $this->error("Zone not found: {$zone}");
+
                 return self::FAILURE;
             }
             $zone = $zoneId;
@@ -44,7 +45,8 @@ class DnsCreateCommand extends Command
         );
 
         if (! $response->successful()) {
-            $this->error('Failed to create DNS record: ' . $response->body());
+            $this->error('Failed to create DNS record: '.$response->body());
+
             return self::FAILURE;
         }
 
@@ -52,6 +54,7 @@ class DnsCreateCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($record, JSON_PRETTY_PRINT));
+
             return self::SUCCESS;
         }
 
@@ -72,8 +75,10 @@ class DnsCreateCommand extends Command
         $response = $connector->zones()->list($name);
         if ($response->successful()) {
             $zones = $response->json('result', []);
+
             return $zones[0]['id'] ?? null;
         }
+
         return null;
     }
 

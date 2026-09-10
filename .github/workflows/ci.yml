@@ -1,9 +1,22 @@
 name: CI
 
 on:
-  push:
-    branches: [main, cursor/**]
   pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# House gate is synapse-sentinel/quality-runners (Pint / Pest / PHPStan / Rector
+# on the clone host, then Statuses API: quality-runners/{tool} + quality-runners/gate).
+# https://github.com/synapse-sentinel/quality-runners
+#
+# Residual: this workflow still runs Pest (and Pint --test) on GitHub-hosted
+# runners until conduit-ui is subscribed (quality-runners#73). It is not the
+# house gate. Do not name this job "quality-runners is the house gate".
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:
@@ -16,4 +29,5 @@ jobs:
           extensions: mbstring, xml
           coverage: none
       - run: composer install --no-interaction --prefer-dist
-      - run: vendor/bin/pest
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/pest --compact

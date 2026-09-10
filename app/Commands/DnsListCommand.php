@@ -27,6 +27,7 @@ class DnsListCommand extends Command
             $zoneId = $this->resolveZoneId($connector, $zone);
             if (! $zoneId) {
                 $this->error("Zone not found: {$zone}");
+
                 return self::FAILURE;
             }
             $zone = $zoneId;
@@ -38,7 +39,8 @@ class DnsListCommand extends Command
         );
 
         if (! $response->successful()) {
-            $this->error('Failed to list DNS records: ' . $response->body());
+            $this->error('Failed to list DNS records: '.$response->body());
+
             return self::FAILURE;
         }
 
@@ -46,11 +48,13 @@ class DnsListCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($records, JSON_PRETTY_PRINT));
+
             return self::SUCCESS;
         }
 
         if (empty($records)) {
             $this->info('No DNS records found.');
+
             return self::SUCCESS;
         }
 
@@ -73,15 +77,17 @@ class DnsListCommand extends Command
         $response = $connector->zones()->list($name);
         if ($response->successful()) {
             $zones = $response->json('result', []);
+
             return $zones[0]['id'] ?? null;
         }
+
         return null;
     }
 
     protected function truncate(string $value, int $length): string
     {
         return strlen($value) > $length
-            ? substr($value, 0, $length - 3) . '...'
+            ? substr($value, 0, $length - 3).'...'
             : $value;
     }
 

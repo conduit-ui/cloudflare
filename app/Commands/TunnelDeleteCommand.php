@@ -33,7 +33,7 @@ class TunnelDeleteCommand extends Command
         $response = $connector->tunnels()->delete($tunnelId);
 
         if (! $response->successful()) {
-            $this->error('Failed to delete tunnel: ' . $response->body());
+            $this->error('Failed to delete tunnel: '.$response->body());
 
             return self::FAILURE;
         }
