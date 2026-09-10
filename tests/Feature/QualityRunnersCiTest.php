@@ -8,7 +8,8 @@ it('does not fake-green a quality-runners gate check from GitHub Actions', funct
     expect($yml)->toContain('name: CI')
         ->and($yml)->toContain('synapse-sentinel/quality-runners')
         ->and($yml)->toContain('vendor/bin/pest')
-        ->and($yml)->not->toContain('quality-runners is the house gate')
+        ->and($yml)->toContain('vendor/bin/pint --test')
+        ->and($yml)->not->toContain('name: quality-runners is the house gate')
         ->and($yml)->not->toContain('Pint + PHPStan + Pest');
 });
 
