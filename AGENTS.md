@@ -26,7 +26,8 @@ cp .env.example .env   # set CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID for li
 
 ## Conventions
 
-- Prefer `--json` in examples and agent-facing docs. That flag prints pretty-printed JSON of the API `result` on stdout (not a wrapped envelope).
+- Prefer `--json` in examples and agent-facing docs. That flag prints pretty-printed JSON of the API `result` on stdout. Lists are arrays; creates are objects. Failures are a human error line and a non-zero exit.
+- `tunnel:create` / `tunnel:expose --json` include create-time `token` and `credentials_file`. Treat that stdout as secret.
 - Keep API credentials in env; never hardcode tokens.
 - New Cloudflare endpoints: Saloon request + resource method + command; mirror existing `--json` / table patterns.
 - Avoid breaking command signatures; additive flags are fine.

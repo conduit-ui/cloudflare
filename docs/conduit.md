@@ -32,10 +32,16 @@ Minimum token scopes:
 
 1. **Always pass `--json`** when parsing results.
 2. **Check exit code** — `0` success, non-zero failure (errors go to stderr / human error lines).
-3. **`--json` prints the API `result`** as pretty-printed JSON on stdout. It is not a wrapped `{ok, data}` envelope.
+3. **`--json` prints the API `result`** as pretty-printed JSON on stdout. Lists are arrays. Creates are objects. Failures are a human error line and a non-zero exit.
 4. **Zone args** accept a zone ID (`^[a-f0-9]{32}$`) or a domain name; domain names are resolved via the Zones API.
-5. **Do not print tokens.** Read credentials from the environment only. `tunnel:create` / `tunnel:expose` print a connector token once — store it, do not log it.
+5. **Do not print tokens.** Read credentials from the environment only. `tunnel:create` / `tunnel:expose --json` include create-time `token` and `credentials_file` — store them, do not log them.
 6. Prefer composing with sibling tools (`issue-cli`, `qdrant-tools`, `pr-cli`, …) rather than re-implementing Cloudflare calls.
+
+```bash
+./cf zones --json | jq '.[].name'
+./cf tunnel:create my-app --json | jq -r '.id'
+./cf tunnel:expose my-app app.example.com --json | jq -r '.tunnel.id'
+```
 
 ## Typical recipes
 

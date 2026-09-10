@@ -72,7 +72,7 @@ Create a non-production record (use a safe subdomain):
 ./cf dns:list example.com --name=demo-cf
 ```
 
-Clean up in the dashboard (or a future `dns:delete` command) when finished recording.
+Clean up the demo DNS record in the dashboard when finished recording.
 
 ---
 

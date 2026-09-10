@@ -12,7 +12,7 @@ To turn this into a real [asciinema](https://asciinema.org/) cast later:
 
 Until a binary `.cast` is checked in, use the transcript below as the expected session.
 
-`--json` prints pretty-printed JSON of the API `result` (an array or object), not a wrapped envelope.
+`--json` prints pretty-printed JSON of the API `result`. Lists are arrays. Creates are objects. `tunnel:expose --json` is an object with `tunnel`, `hostname`, `url`, `ingress_configured`, `dns_created`, `dns_record`, `configuration`, and `dns_route_command`.
 
 ---
 
@@ -77,6 +77,35 @@ Expose your local app:
   3. Local service for ingress: http://localhost:8000
   4. Optional DNS: cloudflared tunnel route dns demo-conduit <hostname>
 
+$ ./cf tunnel:expose demo-conduit demo-tunnel.example.com http://localhost:3000 --json
+{
+    "tunnel": {
+        "id": "11111111-2222-3333-4444-555555555555",
+        "name": "demo-conduit",
+        "status": "inactive",
+        "created_at": "2026-03-26T12:00:00Z",
+        "token": "<redacted>",
+        "credentials_file": {
+            "AccountTag": "account-tag",
+            "TunnelID": "11111111-2222-3333-4444-555555555555",
+            "TunnelName": "demo-conduit",
+            "TunnelSecret": "<redacted>"
+        }
+    },
+    "hostname": "demo-tunnel.example.com",
+    "url": "http://localhost:3000",
+    "ingress_configured": true,
+    "dns_created": true,
+    "dns_record": {
+        "id": "rec02abcdefghijklmnopqrstuvwxyz",
+        "type": "CNAME",
+        "name": "demo-tunnel.example.com",
+        "content": "11111111-2222-3333-4444-555555555555.cfargotunnel.com"
+    },
+    "configuration": {},
+    "dns_route_command": "cloudflared tunnel route dns demo-conduit demo-tunnel.example.com"
+}
+
 $ ./cf tunnel:create demo-conduit --json
 {
     "id": "11111111-2222-3333-4444-555555555555",
@@ -114,4 +143,5 @@ Tunnel deleted successfully.
 ```bash
 ./cf zones --json | jq '.[].name'
 ./cf tunnel:create demo-conduit --json | jq -r '.id'
+./cf tunnel:expose demo-conduit demo-tunnel.example.com --json | jq -r '.tunnel.id'
 ```
