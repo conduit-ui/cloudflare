@@ -75,18 +75,23 @@ it('returns cancelled JSON envelope when tunnel:delete is not confirmed', functi
     putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
     $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
     $_ENV['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
+    $_SERVER['CLOUDFLARE_API_TOKEN'] = 'test-token';
+    $_SERVER['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
 
     $status = Artisan::call('tunnel:delete', [
         'id' => 'tun-1',
         '--json' => true,
         '--no-interaction' => true,
     ]);
-    $output = Artisan::output();
+    $payload = decodeAgentJson(Artisan::output());
 
     expect($status)->toBe(0)
-        ->and($output)->toContain('"ok": true')
-        ->and($output)->toContain('"cancelled": true')
-        ->and($output)->toContain('"deleted": false');
+        ->and($payload['ok'])->toBeTrue()
+        ->and($payload)->not->toHaveKey('error')
+        ->and($payload['data'])->toMatchArray([
+            'deleted' => false,
+            'cancelled' => true,
+        ]);
 });
 
 it('returns failure JSON envelope when Cloudflare API errors', function () {
