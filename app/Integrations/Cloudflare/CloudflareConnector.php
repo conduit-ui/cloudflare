@@ -24,7 +24,7 @@ class CloudflareConnector extends Connector
     protected function defaultHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->apiToken,
+            'Authorization' => 'Bearer '.$this->apiToken,
             'Content-Type' => 'application/json',
         ];
     }

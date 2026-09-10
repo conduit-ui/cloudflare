@@ -21,7 +21,8 @@ class ZonesCommand extends Command
         $response = $connector->zones()->list($this->option('name'));
 
         if (! $response->successful()) {
-            $this->error('Failed to list zones: ' . $response->body());
+            $this->error('Failed to list zones: '.$response->body());
+
             return self::FAILURE;
         }
 
@@ -29,11 +30,13 @@ class ZonesCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($zones, JSON_PRETTY_PRINT));
+
             return self::SUCCESS;
         }
 
         if (empty($zones)) {
             $this->info('No zones found.');
+
             return self::SUCCESS;
         }
 

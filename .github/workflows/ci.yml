@@ -1,19 +1,28 @@
 name: CI
 
 on:
-  push:
-    branches: [main, cursor/**]
   pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Quality tools are not run on GitHub-hosted runners.
+# synapse-sentinel/quality-runners clones the PR, runs Pint / Pest / PHPStan / Rector,
+# and posts commit statuses (quality-runners/{tool}, quality-runners/gate).
+# Merge still requires those green. Do not add a second runner here.
+# https://github.com/synapse-sentinel/quality-runners
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  tests:
+  pointer:
+    name: quality-runners is the house gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: mbstring, xml
-          coverage: none
-      - run: composer install --no-interaction --prefer-dist
-      - run: vendor/bin/pest
+      - name: Point at the house runner
+        run: |
+          echo "conduit-ui/cloudflare quality is synapse-sentinel/quality-runners, not this workflow."
+          echo "https://github.com/synapse-sentinel/quality-runners"
+          echo "This job does not run Pint, Pest, PHPStan, or Rector."

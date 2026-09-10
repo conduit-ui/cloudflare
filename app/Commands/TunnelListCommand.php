@@ -22,7 +22,7 @@ class TunnelListCommand extends Command
         $response = $connector->tunnels()->list();
 
         if (! $response->successful()) {
-            $this->error('Failed to list tunnels: ' . $response->body());
+            $this->error('Failed to list tunnels: '.$response->body());
 
             return self::FAILURE;
         }
@@ -44,7 +44,7 @@ class TunnelListCommand extends Command
         $this->table(
             ['ID', 'Name', 'Status', 'Created', 'Connections'],
             collect($tunnels)->map(fn ($t) => [
-                substr($t['id'], 0, 8) . '...',
+                substr($t['id'], 0, 8).'...',
                 $t['name'],
                 $t['status'] ?? 'unknown',
                 substr($t['created_at'] ?? '', 0, 10),

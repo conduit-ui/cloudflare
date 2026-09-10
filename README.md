@@ -95,6 +95,17 @@ app/
 │   └── Requests/                # Individual API requests
 ```
 
+## Development
+
+PR quality is [quality-runners](https://github.com/synapse-sentinel/quality-runners) (Pint, Pest, PHPStan, Rector). GitHub Actions does not run those tools.
+
+Locally:
+
+```bash
+composer install
+./bin/ci
+```
+
 ## License
 
 MIT
