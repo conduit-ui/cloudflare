@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\InteractsWithCloudflare;
 use App\Commands\Concerns\OutputsJson;
 use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelCreateCommand extends Command
 {
+    use InteractsWithCloudflare {
+        getConnector as private unusedTraitGetConnector;
+    }
     use OutputsJson;
 
     protected $signature = 'tunnel:create
@@ -37,7 +41,7 @@ class TunnelCreateCommand extends Command
             return $this->jsonFail('Failed to create tunnel: '.$response->body());
         }
 
-        $tunnel = $response->json('result');
+        $tunnel = $response->json('result') ?? [];
 
         if ($this->wantsJson()) {
             return $this->jsonSuccess($tunnel);
@@ -45,18 +49,8 @@ class TunnelCreateCommand extends Command
 
         $this->newLine();
         $this->info('Tunnel created successfully!');
-        $this->table(['Field', 'Value'], [
-            ['ID', $tunnel['id']],
-            ['Name', $tunnel['name']],
-            ['Status', $tunnel['status'] ?? 'inactive'],
-            ['Created', $tunnel['created_at'] ?? 'now'],
-        ]);
-
-        $this->newLine();
-        $this->comment('Next steps:');
-        $this->line('  1. Configure ingress rules in ~/.cloudflared/config.yml');
-        $this->line('  2. Run: cloudflared tunnel route dns '.$name.' <hostname>');
-        $this->line('  3. Start tunnel: cloudflared tunnel run '.$name);
+        $this->displayTunnelCredentials($tunnel);
+        $this->displayCloudflaredRunSteps($tunnel, 'http://localhost:8000');
 
         return self::SUCCESS;
     }
