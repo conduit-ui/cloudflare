@@ -4,12 +4,33 @@ Lightweight Cloudflare management CLI built with Laravel Zero and Saloon.
 
 ## Installation
 
+### Binary (recommended)
+
+Download `cf` from [Releases](https://github.com/conduit-ui/cloudflare/releases), then:
+
+```bash
+chmod +x cf
+sudo mv cf /usr/local/bin/cf
+```
+
+### Composer
+
+```bash
+composer require conduit-ui/cloudflare
+# or globally:
+composer global require conduit-ui/cloudflare
+```
+
+### From source
+
 ```bash
 git clone https://github.com/conduit-ui/cloudflare.git
 cd cloudflare
 composer install
 cp .env.example .env
 ```
+
+Build a local PHAR after `composer install` with `composer build` (or `php cf app:build cf`).
 
 ## Configuration
 

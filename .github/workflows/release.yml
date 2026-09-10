@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml
+          coverage: none
+          ini-values: phar.readonly=0
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Build PHAR
+        run: php cf app:build cf --build-version="${GITHUB_REF_NAME#v}"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: builds/cf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

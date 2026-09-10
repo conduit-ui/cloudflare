@@ -59,5 +59,9 @@
     "prefer-stable": true,
     "bin": [
         "cf"
-    ]
+    ],
+    "scripts": {
+        "build": "php -d phar.readonly=0 cf app:build cf",
+        "test": "pest"
+    }
 }
