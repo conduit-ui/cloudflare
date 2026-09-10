@@ -50,8 +50,10 @@ class SetupCommand extends Command
         $response = $connector->user()->verifyToken();
 
         if (! $response->successful() || $response->json('success') !== true) {
-            $message = $response->json('errors.0.message')
-                ?? ('Token verification failed: '.$response->body());
+            $error = $response->json('errors.0.message');
+            $message = is_string($error) && $error !== ''
+                ? $error
+                : 'Token verification failed: '.$response->body();
 
             return $this->failSetup($message);
         }
@@ -94,8 +96,12 @@ class SetupCommand extends Command
         foreach ($values as $key => $value) {
             $line = $key.'='.$this->escapeEnvValue($value);
 
-            if (preg_match("/^{$key}=.*/m", $contents)) {
-                $contents = preg_replace("/^{$key}=.*/m", $line, $contents) ?? $contents;
+            if (preg_match('/^'.preg_quote($key, '/').'=.*/m', $contents)) {
+                $contents = preg_replace_callback(
+                    '/^'.preg_quote($key, '/').'=.*/m',
+                    static fn (): string => $line,
+                    $contents
+                ) ?? $contents;
             } else {
                 $contents = rtrim($contents);
                 $contents .= ($contents === '' ? '' : PHP_EOL).$line.PHP_EOL;
