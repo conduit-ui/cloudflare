@@ -6,12 +6,49 @@ use App\Integrations\Cloudflare\CloudflareConnector;
 use App\Integrations\Cloudflare\Requests\Dns\DeleteDnsRecord;
 use App\Integrations\Cloudflare\Requests\Dns\UpdateDnsRecord;
 use App\Integrations\Cloudflare\Requests\Tunnels\GetTunnel;
+use Illuminate\Support\Facades\Artisan;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
+
+beforeEach(function () {
+    putenv('CLOUDFLARE_API_TOKEN=test-token');
+    putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
+    $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
+    $_ENV['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
+    $_SERVER['CLOUDFLARE_API_TOKEN'] = 'test-token';
+    $_SERVER['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
+
+    MockClient::destroyGlobal();
+});
 
 afterEach(function () {
     MockClient::destroyGlobal();
 });
+
+function decodeCommandJson(string $output): array
+{
+    $trimmed = trim($output);
+    $decoded = json_decode($trimmed, true);
+
+    if (is_array($decoded)) {
+        return $decoded;
+    }
+
+    $start = strpos($trimmed, '{');
+    $end = strrpos($trimmed, '}');
+
+    if ($start !== false && $end !== false && $end > $start) {
+        $decoded = json_decode(substr($trimmed, $start, $end - $start + 1), true);
+
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+
+    expect($trimmed)->toBeJson();
+
+    return [];
+}
 
 it('registers dns:delete, dns:update, and tunnel:get commands', function () {
     $this->artisan('list')
@@ -22,39 +59,36 @@ it('registers dns:delete, dns:update, and tunnel:get commands', function () {
 });
 
 it('deletes a dns record with --force and --json', function () {
-    putenv('CLOUDFLARE_API_TOKEN=test-token');
-    putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
-    $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
-    $_ENV['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
-
     $zoneId = 'abc123def456abc123def456abc123de';
     $recordId = 'rec11122233344455566677788899900';
 
-    MockClient::global([
+    $mock = MockClient::global([
         DeleteDnsRecord::class => MockResponse::make([
             'success' => true,
             'result' => ['id' => $recordId],
         ], 200),
     ]);
 
-    $this->artisan('dns:delete', [
+    $exit = Artisan::call('dns:delete', [
         'zone' => $zoneId,
         'id' => $recordId,
         '--force' => true,
         '--json' => true,
-    ])
-        ->expectsOutputToContain($recordId)
-        ->assertSuccessful();
+    ]);
+    $payload = decodeCommandJson(Artisan::output());
+
+    expect($exit)->toBe(0)
+        ->and($payload)->toHaveKey('id')
+        ->and($payload['id'])->toBe($recordId);
+
+    $mock->assertSent(DeleteDnsRecord::class);
 });
 
 it('updates a dns record and prints a table', function () {
-    putenv('CLOUDFLARE_API_TOKEN=test-token');
-    $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
-
     $zoneId = 'abc123def456abc123def456abc123de';
     $recordId = 'rec11122233344455566677788899900';
 
-    MockClient::global([
+    $mock = MockClient::global([
         UpdateDnsRecord::class => MockResponse::make([
             'success' => true,
             'result' => [
@@ -68,27 +102,39 @@ it('updates a dns record and prints a table', function () {
         ], 200),
     ]);
 
-    $this->artisan('dns:update', [
+    $exit = Artisan::call('dns:update', [
         'zone' => $zoneId,
         'id' => $recordId,
         'type' => 'A',
         'name' => 'api',
         'content' => '5.6.7.8',
-    ])
-        ->expectsOutputToContain('DNS record updated successfully!')
-        ->expectsOutputToContain($recordId)
-        ->assertSuccessful();
+    ]);
+    $output = Artisan::output();
+
+    expect($exit)->toBe(0)
+        ->and($output)->toContain('DNS record updated successfully!')
+        ->and($output)->toContain('Field')
+        ->and($output)->toContain('Value')
+        ->and($output)->toContain($recordId)
+        ->and($output)->toContain('Type')
+        ->and($output)->toContain('A')
+        ->and($output)->toContain('Name')
+        ->and($output)->toContain('api.example.com')
+        ->and($output)->toContain('Content')
+        ->and($output)->toContain('5.6.7.8')
+        ->and($output)->toContain('Proxied')
+        ->and($output)->toContain('No')
+        ->and($output)->toContain('TTL')
+        ->and($output)->toContain('Auto')
+        ->and($output)->not->toContain('"id":');
+
+    $mock->assertSent(UpdateDnsRecord::class);
 });
 
 it('gets a tunnel and supports --json', function () {
-    putenv('CLOUDFLARE_API_TOKEN=test-token');
-    putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
-    $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
-    $_ENV['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
-
     $tunnelId = 'tun-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
-    MockClient::global([
+    $mock = MockClient::global([
         GetTunnel::class => MockResponse::make([
             'success' => true,
             'result' => [
@@ -101,10 +147,21 @@ it('gets a tunnel and supports --json', function () {
         ], 200),
     ]);
 
-    $this->artisan('tunnel:get', [
+    $exit = Artisan::call('tunnel:get', [
         'id' => $tunnelId,
         '--json' => true,
-    ])->assertSuccessful();
+    ]);
+    $payload = decodeCommandJson(Artisan::output());
+
+    expect($exit)->toBe(0)
+        ->and($payload['id'])->toBe($tunnelId)
+        ->and($payload['name'])->toBe('my-app')
+        ->and($payload['status'])->toBe('healthy')
+        ->and($payload['created_at'])->toBe('2024-01-15T12:00:00Z')
+        ->and($payload['connections'])->toHaveCount(1)
+        ->and($payload['connections'][0]['id'])->toBe('c1');
+
+    $mock->assertSent(GetTunnel::class);
 });
 
 it('builds update, delete, and get request endpoints', function () {
