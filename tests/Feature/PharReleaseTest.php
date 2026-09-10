@@ -13,6 +13,13 @@ it('builds the release PHAR on PHP 8.3', function () {
         ->and($yml)->not->toContain("php-version: '8.4'");
 });
 
+it('releases the PHAR on v* tags as builds/cf', function () {
+    $yml = file_get_contents(base_path('.github/workflows/release.yml'));
+
+    expect($yml)->toContain("tags:\n      - 'v*'")
+        ->and($yml)->toContain('files: builds/cf');
+});
+
 it('exposes a composer build script for the PHAR', function () {
     $composer = json_decode(
         (string) file_get_contents(base_path('composer.json')),
