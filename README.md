@@ -50,9 +50,39 @@ Get credentials from:
 ### Tunnels
 ```bash
 ./cf tunnel:list              # List all tunnels
-./cf tunnel:create <name>     # Create tunnel
+./cf tunnel:create <name>     # Create tunnel (prints token/credentials)
+./cf tunnel:expose <name> [hostname] [url]  # Create + route + cloudflared steps
 ./cf tunnel:delete <id>       # Delete tunnel
 ```
+
+## Expose a local app
+
+One guided flow: create a tunnel, print the connector token, and (when a hostname is given) attempt remote ingress + DNS CNAME via the API. Falls back to exact `cloudflared` commands when the API cannot route.
+
+```bash
+# Default local service: http://localhost:8000
+./cf tunnel:expose my-app
+
+# Hostname + custom local URL
+./cf tunnel:expose my-app app.example.com http://localhost:3000
+
+# Full create payload (token, credentials_file, routing results)
+./cf tunnel:expose my-app app.example.com --json
+```
+
+Then run [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/) with the printed token:
+
+```bash
+cloudflared tunnel run --token <token-from-output>
+```
+
+If DNS was not created via API:
+
+```bash
+cloudflared tunnel route dns my-app app.example.com
+```
+
+`tunnel:create` masks secrets in the summary table and prints full token / credentials once. Use `--json` for the raw API result.
 
 ## Architecture
 
