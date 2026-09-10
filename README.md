@@ -1,6 +1,8 @@
-# Cloudflare CLI
+# Conduit Cloudflare CLI (`cf`)
 
-Lightweight Cloudflare management CLI built with Laravel Zero and Saloon.
+**Zones, DNS, and tunnels for Conduit agents — a Laravel Zero + Saloon CLI that turns Cloudflare into a scriptable, `--json`-ready toolbox.**
+
+Part of the [conduit-ui](https://github.com/conduit-ui) agent tooling set. Humans get tables; agents pass `--json` and parse stdout.
 
 ## Installation
 
@@ -66,7 +68,7 @@ Get credentials from:
 
 ## Agent JSON output
 
-Pass `--json` for a stable envelope on stdout: `{"ok":true,"data":...}` on success, `{"ok":false,"error":"..."}` on failure (exit `0` / `1`). See [docs/agent-output.md](docs/agent-output.md).
+Pass `--json` for a stable envelope on stdout: `{"ok":true,"data":...}` on success, `{"ok":false,"error":"..."}` on failure (exit `0` / `1`). See [docs/agent-output.md](docs/agent-output.md). Agent recipes: [docs/conduit.md](docs/conduit.md).
 
 ## Commands
 
@@ -143,6 +145,24 @@ app/
 │   ├── Resources/               # API resource classes
 │   └── Requests/                # Individual API requests
 ```
+
+## Demo walkthrough
+
+Scripted zones → DNS → tunnel session: [`docs/demo.md`](docs/demo.md). Sample terminal output: [`docs/demo.cast.md`](docs/demo.cast.md).
+
+## Conduit ecosystem
+
+`cf` is agent tooling for the [conduit-ui](https://github.com/conduit-ui) ecosystem. Prefer `--json` output when scripting or driving the CLI from an agent.
+
+Sibling tools (conceptual neighbors):
+
+- [issue-cli](https://github.com/conduit-ui/issue-cli) — GitHub issues
+- [qdrant-tools](https://github.com/conduit-ui/qdrant-tools) — Qdrant vector DB
+- [pr-cli](https://github.com/conduit-ui/pr-cli) — pull requests
+- [commit-cli](https://github.com/conduit-ui/commit-cli) — commit messages
+- [knowledge](https://github.com/conduit-ui/knowledge) — semantic knowledge base
+
+Agent-oriented setup and recipes (list zones, create DNS, create tunnel, expose a local app): **[docs/conduit.md](docs/conduit.md)**. Coding agents: **[AGENTS.md](AGENTS.md)**.
 
 ## Development
 
