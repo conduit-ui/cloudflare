@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Integrations\Cloudflare\CloudflareConnector;
+use App\Commands\Concerns\InteractsWithCloudflare;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelListCommand extends Command
 {
+    use InteractsWithCloudflare;
+
     protected $signature = 'tunnel:list
         {--json : Output as JSON}';
 
@@ -21,6 +23,7 @@ class TunnelListCommand extends Command
 
         if (! $response->successful()) {
             $this->error('Failed to list tunnels: ' . $response->body());
+
             return self::FAILURE;
         }
 
@@ -28,11 +31,13 @@ class TunnelListCommand extends Command
 
         if ($this->option('json')) {
             $this->line(json_encode($tunnels, JSON_PRETTY_PRINT));
+
             return self::SUCCESS;
         }
 
         if (empty($tunnels)) {
             $this->info('No tunnels found.');
+
             return self::SUCCESS;
         }
 
@@ -48,18 +53,5 @@ class TunnelListCommand extends Command
         );
 
         return self::SUCCESS;
-    }
-
-    protected function getConnector(): CloudflareConnector
-    {
-        $token = env('CLOUDFLARE_API_TOKEN');
-        $accountId = env('CLOUDFLARE_ACCOUNT_ID');
-
-        if (! $token) {
-            $this->error('CLOUDFLARE_API_TOKEN not set');
-            exit(1);
-        }
-
-        return new CloudflareConnector($token, $accountId);
     }
 }

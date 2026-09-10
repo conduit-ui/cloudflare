@@ -9,6 +9,7 @@ use App\Integrations\Cloudflare\Requests\Tunnels\CreateTunnel;
 use App\Integrations\Cloudflare\Requests\Tunnels\DeleteTunnel;
 use App\Integrations\Cloudflare\Requests\Tunnels\GetTunnel;
 use App\Integrations\Cloudflare\Requests\Tunnels\ListTunnels;
+use App\Integrations\Cloudflare\Requests\Tunnels\UpdateTunnelConfiguration;
 use Saloon\Http\Response;
 
 class TunnelResource
@@ -46,6 +47,20 @@ class TunnelResource
         return $this->connector->send(new DeleteTunnel(
             $this->connector->getAccountId(),
             $tunnelId
+        ));
+    }
+
+    /**
+     * Replace remotely-managed tunnel ingress (public hostname → local service).
+     *
+     * @param  array<int, array<string, mixed>>  $ingress
+     */
+    public function configure(string $tunnelId, array $ingress): Response
+    {
+        return $this->connector->send(new UpdateTunnelConfiguration(
+            $this->connector->getAccountId(),
+            $tunnelId,
+            $ingress
         ));
     }
 }
