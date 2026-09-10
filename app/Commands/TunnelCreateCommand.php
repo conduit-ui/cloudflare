@@ -6,14 +6,11 @@ namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
 use App\Commands\Concerns\OutputsJson;
-use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelCreateCommand extends Command
 {
-    use InteractsWithCloudflare {
-        getConnector as private unusedTraitGetConnector;
-    }
+    use InteractsWithCloudflare;
     use OutputsJson;
 
     protected $signature = 'tunnel:create
@@ -53,19 +50,5 @@ class TunnelCreateCommand extends Command
         $this->displayCloudflaredRunSteps($tunnel, 'http://localhost:8000');
 
         return self::SUCCESS;
-    }
-
-    protected function getConnector(): ?CloudflareConnector
-    {
-        $token = env('CLOUDFLARE_API_TOKEN');
-        $accountId = env('CLOUDFLARE_ACCOUNT_ID');
-
-        if (! $token || ! $accountId) {
-            $this->jsonFail('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
-
-            return null;
-        }
-
-        return new CloudflareConnector($token, $accountId);
     }
 }

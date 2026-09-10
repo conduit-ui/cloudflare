@@ -8,14 +8,21 @@ use App\Integrations\Cloudflare\CloudflareConnector;
 
 trait InteractsWithCloudflare
 {
-    protected function getConnector(): CloudflareConnector
+    protected function getConnector(): ?CloudflareConnector
     {
         $token = env('CLOUDFLARE_API_TOKEN');
         $accountId = env('CLOUDFLARE_ACCOUNT_ID');
 
         if (! $token || ! $accountId) {
-            $this->error('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
-            exit(1);
+            $message = 'CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set';
+
+            if (method_exists($this, 'jsonFail')) {
+                $this->jsonFail($message);
+            } else {
+                $this->error($message);
+            }
+
+            return null;
         }
 
         return new CloudflareConnector($token, $accountId);

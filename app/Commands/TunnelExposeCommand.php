@@ -22,6 +22,10 @@ class TunnelExposeCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
+        if ($connector === null) {
+            return self::FAILURE;
+        }
+
         $name = (string) $this->argument('name');
         $hostname = $this->argument('hostname') ? (string) $this->argument('hostname') : null;
         $url = (string) $this->argument('url');

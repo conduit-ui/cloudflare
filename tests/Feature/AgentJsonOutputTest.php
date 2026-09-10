@@ -70,6 +70,25 @@ it('returns success JSON envelope for zones with mocked HTTP', function () {
         ->and($payload['data'])->toBe($zones);
 });
 
+it('returns cancelled JSON envelope when tunnel:delete is not confirmed', function () {
+    putenv('CLOUDFLARE_API_TOKEN=test-token');
+    putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
+    $_ENV['CLOUDFLARE_API_TOKEN'] = 'test-token';
+    $_ENV['CLOUDFLARE_ACCOUNT_ID'] = 'test-account';
+
+    $status = Artisan::call('tunnel:delete', [
+        'id' => 'tun-1',
+        '--json' => true,
+        '--no-interaction' => true,
+    ]);
+    $output = Artisan::output();
+
+    expect($status)->toBe(0)
+        ->and($output)->toContain('"ok": true')
+        ->and($output)->toContain('"cancelled": true')
+        ->and($output)->toContain('"deleted": false');
+});
+
 it('returns failure JSON envelope when Cloudflare API errors', function () {
     putenv('CLOUDFLARE_API_TOKEN=test-token');
     putenv('CLOUDFLARE_ACCOUNT_ID=test-account');
