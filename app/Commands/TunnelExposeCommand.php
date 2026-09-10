@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
+use App\Commands\Concerns\OutputsJson;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelExposeCommand extends Command
 {
     use InteractsWithCloudflare;
+    use OutputsJson;
 
     protected $signature = 'tunnel:expose
         {name : Name of the tunnel}
@@ -29,18 +31,15 @@ class TunnelExposeCommand extends Command
         $name = (string) $this->argument('name');
         $hostname = $this->argument('hostname') ? (string) $this->argument('hostname') : null;
         $url = (string) $this->argument('url');
-        $asJson = (bool) $this->option('json');
 
-        if (! $asJson) {
+        if (! $this->wantsJson()) {
             $this->info("Creating tunnel \"{$name}\" to expose {$url}...");
         }
 
         $response = $connector->tunnels()->create($name);
 
         if (! $response->successful()) {
-            $this->error('Failed to create tunnel: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to create tunnel: '.$response->body());
         }
 
         $tunnel = $response->json('result') ?? [];
@@ -89,8 +88,8 @@ class TunnelExposeCommand extends Command
             }
         }
 
-        if ($asJson) {
-            $this->line(json_encode([
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess([
                 'tunnel' => $tunnel,
                 'hostname' => $hostname,
                 'url' => $url,
@@ -99,9 +98,7 @@ class TunnelExposeCommand extends Command
                 'dns_record' => $dnsRecord,
                 'configuration' => $configuration,
                 'dns_route_command' => $dnsRouteCommand,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-            return self::SUCCESS;
+            ]);
         }
 
         $this->newLine();

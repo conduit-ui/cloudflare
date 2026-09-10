@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\InteractsWithCloudflare;
 use App\Commands\Concerns\OutputsJson;
 use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class DnsCreateCommand extends Command
 {
+    use InteractsWithCloudflare;
     use OutputsJson;
 
     protected $signature = 'dns:create
@@ -80,19 +82,5 @@ class DnsCreateCommand extends Command
         }
 
         return null;
-    }
-
-    protected function getConnector(): ?CloudflareConnector
-    {
-        $token = env('CLOUDFLARE_API_TOKEN');
-        $accountId = env('CLOUDFLARE_ACCOUNT_ID');
-
-        if (! $token) {
-            $this->jsonFail('CLOUDFLARE_API_TOKEN not set');
-
-            return null;
-        }
-
-        return new CloudflareConnector($token, $accountId);
     }
 }

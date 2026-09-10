@@ -86,7 +86,7 @@ If DNS was not created via API:
 cloudflared tunnel route dns my-app app.example.com
 ```
 
-`tunnel:create` masks secrets in the summary table and prints full token / credentials once. Use `--json` for the raw API result.
+`tunnel:create` masks secrets in the summary table and prints full token / credentials once. Use `--json` for the agent envelope (`{"ok":true,"data":...}`).
 
 ## Architecture
 

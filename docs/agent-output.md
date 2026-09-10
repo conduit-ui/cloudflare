@@ -10,8 +10,10 @@ Conduit agents should pass `--json` on Cloudflare CLI commands and parse a stabl
 | Failure | `1` (`FAILURE`) | `{"ok":false,"error":"..."}` |
 
 - Pretty-printed JSON (`JSON_PRETTY_PRINT`), unescaped slashes.
-- `data` is the Cloudflare API `result` payload (array or object), or a small command-specific object (e.g. tunnel delete).
+- Both envelopes go to **stdout** (not stderr).
+- `data` is the Cloudflare API `result` payload (array or object), or a small command-specific object (e.g. tunnel delete / expose).
 - `error` is a human-readable string (may include the API response body).
+- Missing token **or** account id: failure envelope, exit `1`, `error` is exactly `CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set`. `getConnector()` prints that once, returns `null`, and does not `exit()`.
 
 ## Commands
 
@@ -21,8 +23,11 @@ Conduit agents should pass `--json` on Cloudflare CLI commands and parse a stabl
 | `dns:list` | yes | DNS record list |
 | `dns:create` | yes | created record |
 | `tunnel:list` | yes | tunnel list |
-| `tunnel:create` | yes | created tunnel |
-| `tunnel:delete` | yes | `{ "deleted": true, "id": "..." }` (or cancelled) |
+| `tunnel:create` | yes | created tunnel (includes create-time `token` / `credentials_file` when the API returns them) |
+| `tunnel:delete` | yes | `{ "deleted": true, "id": "..." }` — or `{ "deleted": false, "cancelled": true }` (exit `0`) when confirmation is declined |
+| `tunnel:expose` | yes | `{ tunnel, hostname, url, ingress_configured, dns_created, dns_record, configuration, dns_route_command }` |
+
+Human (non-JSON) `tunnel:create` and `tunnel:expose` still print the create-time token and cloudflared run steps.
 
 ## Agent checklist
 
@@ -34,4 +39,6 @@ Conduit agents should pass `--json` on Cloudflare CLI commands and parse a stabl
 
 ## Implementation
 
-Shared helpers live in `App\Commands\Concerns\OutputsJson` (`jsonSuccess()`, `jsonFail()`, `wantsJson()`).
+- Envelopes: `App\Commands\Concerns\OutputsJson` (`jsonSuccess()`, `jsonFail()`, `wantsJson()`).
+- Credentials: `App\Commands\Concerns\InteractsWithCloudflare::getConnector()` prints the missing-creds error once, returns `?CloudflareConnector`, and never exits. Commands return `FAILURE` when it is `null`.
+- There is no `CloudflareCommand` base class.
