@@ -29,17 +29,27 @@ composer global require conduit-ui/cloudflare
 git clone https://github.com/conduit-ui/cloudflare.git
 cd cloudflare
 composer install
-cp .env.example .env
 ```
 
 Build a local PHAR after `composer install` with `composer build` (or `php cf app:build cf`). Artifact: `builds/cf`.
 
 ## Configuration
 
-Edit `.env`:
+Run setup first to validate credentials and write `.env`:
+
 ```bash
-CLOUDFLARE_API_TOKEN=your_token_here
-CLOUDFLARE_ACCOUNT_ID=your_account_id
+./cf setup
+# or non-interactive (agents/CI):
+./cf setup --token=cf_xxx --account-id=abc123 --non-interactive
+./cf setup --token=cf_xxx --account-id=abc123 --non-interactive --json
+```
+
+You can also copy `.env.example` and edit by hand:
+
+```bash
+cp .env.example .env
+# CLOUDFLARE_API_TOKEN=your_token_here
+# CLOUDFLARE_ACCOUNT_ID=your_account_id
 ```
 
 Get credentials from:
@@ -59,6 +69,12 @@ Get credentials from:
 Pass `--json` for a stable envelope on stdout: `{"ok":true,"data":...}` on success, `{"ok":false,"error":"..."}` on failure (exit `0` / `1`). See [docs/agent-output.md](docs/agent-output.md).
 
 ## Commands
+
+### Setup
+```bash
+./cf setup                    # Interactive auth onboarding
+./cf setup --non-interactive --token=... --account-id=...
+```
 
 ### Zones
 ```bash

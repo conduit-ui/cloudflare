@@ -48,4 +48,9 @@ class CloudflareConnector extends Connector
     {
         return new Resources\ZoneResource($this);
     }
+
+    public function user(): Resources\UserResource
+    {
+        return new Resources\UserResource($this);
+    }
 }
