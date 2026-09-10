@@ -2,20 +2,14 @@
 
 declare(strict_types=1);
 
-it('points CI at quality-runners instead of running tools on GitHub Actions', function () {
+it('does not fake-green a quality-runners gate check from GitHub Actions', function () {
     $yml = file_get_contents(base_path('.github/workflows/ci.yml'));
 
     expect($yml)->toContain('name: CI')
         ->and($yml)->toContain('synapse-sentinel/quality-runners')
-        ->and($yml)->toContain('quality-runners is the house gate')
-        ->and($yml)->not->toContain('Pint + PHPStan + Pest')
-        ->and($yml)->not->toContain('actions/checkout')
-        ->and($yml)->not->toContain('setup-php')
-        ->and($yml)->not->toContain('./bin/ci')
-        ->and($yml)->not->toContain('vendor/bin/pint')
-        ->and($yml)->not->toContain('vendor/bin/phpstan')
-        ->and($yml)->not->toContain('vendor/bin/pest')
-        ->and($yml)->not->toContain('vendor/bin/rector');
+        ->and($yml)->toContain('vendor/bin/pest')
+        ->and($yml)->not->toContain('quality-runners is the house gate')
+        ->and($yml)->not->toContain('Pint + PHPStan + Pest');
 });
 
 it('does not ship a synapse-sentinel/gate Actions workflow', function () {

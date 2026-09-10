@@ -97,7 +97,7 @@ app/
 
 ## Development
 
-PR quality is [quality-runners](https://github.com/synapse-sentinel/quality-runners) (Pint, Pest, PHPStan, Rector). GitHub Actions does not run those tools.
+PR quality is [quality-runners](https://github.com/synapse-sentinel/quality-runners) (Pint, Pest, PHPStan, Rector on the clone host). Until that runner is subscribed to this repo, GitHub Actions still runs Pint `--test` and Pest as a residual. Local `./bin/ci` is the full set.
 
 Locally:
 
