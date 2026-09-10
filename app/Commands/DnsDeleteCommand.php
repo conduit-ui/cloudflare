@@ -20,8 +20,8 @@ class DnsDeleteCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
-        $zone = $this->argument('zone');
-        $recordId = $this->argument('id');
+        $zone = (string) $this->argument('zone');
+        $recordId = (string) $this->argument('id');
 
         // If zone looks like a domain, resolve it to ID
         if (! preg_match('/^[a-f0-9]{32}$/', $zone)) {
@@ -45,7 +45,7 @@ class DnsDeleteCommand extends Command
         $response = $connector->dns($zone)->delete($recordId);
 
         if (! $response->successful()) {
-            $this->error('Failed to delete DNS record: ' . $response->body());
+            $this->error('Failed to delete DNS record: '.$response->body());
 
             return self::FAILURE;
         }

@@ -24,7 +24,7 @@ class DnsUpdateCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
-        $zone = $this->argument('zone');
+        $zone = (string) $this->argument('zone');
 
         // If zone looks like a domain, resolve it to ID
         if (! preg_match('/^[a-f0-9]{32}$/', $zone)) {
@@ -38,16 +38,16 @@ class DnsUpdateCommand extends Command
         }
 
         $response = $connector->dns($zone)->update(
-            $this->argument('id'),
-            $this->argument('type'),
-            $this->argument('name'),
-            $this->argument('content'),
+            (string) $this->argument('id'),
+            (string) $this->argument('type'),
+            (string) $this->argument('name'),
+            (string) $this->argument('content'),
             (bool) $this->option('proxied'),
             (int) $this->option('ttl')
         );
 
         if (! $response->successful()) {
-            $this->error('Failed to update DNS record: ' . $response->body());
+            $this->error('Failed to update DNS record: '.$response->body());
 
             return self::FAILURE;
         }
