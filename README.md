@@ -13,6 +13,8 @@ chmod +x cf
 sudo mv cf /usr/local/bin/cf
 ```
 
+Requires PHP 8.3+ (zlib). Export `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` before running commands.
+
 ### Composer
 
 ```bash
@@ -30,7 +32,7 @@ composer install
 cp .env.example .env
 ```
 
-Build a local PHAR after `composer install` with `composer build` (or `php cf app:build cf`).
+Build a local PHAR after `composer install` with `composer build` (or `php cf app:build cf`). Artifact: `builds/cf`.
 
 ## Configuration
 
