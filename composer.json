@@ -48,11 +48,18 @@
         "optimize-autoloader": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.3.33"
         }
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "bin": [
         "cf"
-    ]
+    ],
+    "scripts": {
+        "test": "pest",
+        "lint": "pint --test"
+    }
 }
