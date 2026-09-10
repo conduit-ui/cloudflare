@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\OutputsJson;
 use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class DnsCreateCommand extends Command
 {
+    use OutputsJson;
+
     protected $signature = 'dns:create
         {zone : Zone ID or domain name}
         {type : Record type (A, AAAA, CNAME, TXT, MX, etc)}
@@ -23,15 +26,16 @@ class DnsCreateCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
+        if ($connector === null) {
+            return self::FAILURE;
+        }
+
         $zone = $this->argument('zone');
 
-        // If zone looks like a domain, resolve it to ID
         if (! preg_match('/^[a-f0-9]{32}$/', $zone)) {
             $zoneId = $this->resolveZoneId($connector, $zone);
             if (! $zoneId) {
-                $this->error("Zone not found: {$zone}");
-
-                return self::FAILURE;
+                return $this->jsonFail("Zone not found: {$zone}");
             }
             $zone = $zoneId;
         }
@@ -45,17 +49,13 @@ class DnsCreateCommand extends Command
         );
 
         if (! $response->successful()) {
-            $this->error('Failed to create DNS record: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to create DNS record: '.$response->body());
         }
 
         $record = $response->json('result');
 
-        if ($this->option('json')) {
-            $this->line(json_encode($record, JSON_PRETTY_PRINT));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($record);
         }
 
         $this->info('DNS record created successfully!');
@@ -82,14 +82,15 @@ class DnsCreateCommand extends Command
         return null;
     }
 
-    protected function getConnector(): CloudflareConnector
+    protected function getConnector(): ?CloudflareConnector
     {
         $token = env('CLOUDFLARE_API_TOKEN');
         $accountId = env('CLOUDFLARE_ACCOUNT_ID');
 
         if (! $token) {
-            $this->error('CLOUDFLARE_API_TOKEN not set');
-            exit(1);
+            $this->jsonFail('CLOUDFLARE_API_TOKEN not set');
+
+            return null;
         }
 
         return new CloudflareConnector($token, $accountId);

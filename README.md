@@ -31,12 +31,16 @@ Get credentials from:
 | `dns:*` | DNS:Edit |
 | `tunnel:*` | Cloudflare Tunnel:Edit |
 
+## Agent JSON output
+
+Pass `--json` for a stable envelope on stdout: `{"ok":true,"data":...}` on success, `{"ok":false,"error":"..."}` on failure (exit `0` / `1`). See [docs/agent-output.md](docs/agent-output.md).
+
 ## Commands
 
 ### Zones
 ```bash
 ./cf zones                    # List all zones
-./cf zones --json             # JSON output
+./cf zones --json             # Agent JSON envelope
 ```
 
 ### DNS Records

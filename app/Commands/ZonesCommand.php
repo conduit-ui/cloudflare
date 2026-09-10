@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
+use App\Commands\Concerns\OutputsJson;
 use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class ZonesCommand extends Command
 {
+    use OutputsJson;
+
     protected $signature = 'zones
         {--name= : Filter by zone name}
         {--json : Output as JSON}';
@@ -18,20 +21,20 @@ class ZonesCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
+        if ($connector === null) {
+            return self::FAILURE;
+        }
+
         $response = $connector->zones()->list($this->option('name'));
 
         if (! $response->successful()) {
-            $this->error('Failed to list zones: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to list zones: '.$response->body());
         }
 
         $zones = $response->json('result', []);
 
-        if ($this->option('json')) {
-            $this->line(json_encode($zones, JSON_PRETTY_PRINT));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($zones);
         }
 
         if (empty($zones)) {
@@ -53,14 +56,15 @@ class ZonesCommand extends Command
         return self::SUCCESS;
     }
 
-    protected function getConnector(): CloudflareConnector
+    protected function getConnector(): ?CloudflareConnector
     {
         $token = env('CLOUDFLARE_API_TOKEN');
         $accountId = env('CLOUDFLARE_ACCOUNT_ID');
 
         if (! $token) {
-            $this->error('CLOUDFLARE_API_TOKEN not set');
-            exit(1);
+            $this->jsonFail('CLOUDFLARE_API_TOKEN not set');
+
+            return null;
         }
 
         return new CloudflareConnector($token, $accountId);
