@@ -6,3 +6,4 @@
 .env
 /builds
 *.phar
+.php-bin

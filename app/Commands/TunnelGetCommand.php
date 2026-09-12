@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
+use App\Commands\Concerns\OutputsJson;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelGetCommand extends Command
 {
     use InteractsWithCloudflare;
+    use OutputsJson;
 
     protected $signature = 'tunnel:get
         {id : Tunnel ID}
@@ -20,6 +22,10 @@ class TunnelGetCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
+        if ($connector === null) {
+            return self::FAILURE;
+        }
+
         $tunnelId = (string) $this->argument('id');
 
         $response = $connector->tunnels()->get($tunnelId);
