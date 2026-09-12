@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
+use App\Commands\Concerns\OutputsJson;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelCreateCommand extends Command
 {
     use InteractsWithCloudflare;
+    use OutputsJson;
 
     protected $signature = 'tunnel:create
         {name : Name of the tunnel}
@@ -20,24 +22,26 @@ class TunnelCreateCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
-        $name = (string) $this->argument('name');
+        if ($connector === null) {
+            return self::FAILURE;
+        }
 
-        $this->info("Creating tunnel: {$name}...");
+        $name = $this->argument('name');
+
+        if (! $this->wantsJson()) {
+            $this->info("Creating tunnel: {$name}...");
+        }
 
         $response = $connector->tunnels()->create($name);
 
         if (! $response->successful()) {
-            $this->error('Failed to create tunnel: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to create tunnel: '.$response->body());
         }
 
         $tunnel = $response->json('result') ?? [];
 
-        if ($this->option('json')) {
-            $this->line(json_encode($tunnel, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($tunnel);
         }
 
         $this->newLine();

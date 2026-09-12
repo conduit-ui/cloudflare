@@ -8,17 +8,35 @@ use App\Integrations\Cloudflare\CloudflareConnector;
 
 trait InteractsWithCloudflare
 {
-    protected function getConnector(): CloudflareConnector
+    /**
+     * Resolve the Cloudflare connector from the environment.
+     * Prints the missing-creds error once, returns null, never exits.
+     */
+    protected function getConnector(): ?CloudflareConnector
     {
         $token = env('CLOUDFLARE_API_TOKEN');
         $accountId = env('CLOUDFLARE_ACCOUNT_ID');
 
         if (! $token || ! $accountId) {
-            $this->error('CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set');
-            exit(1);
+            $this->reportMissingCloudflareCredentials();
+
+            return null;
         }
 
         return new CloudflareConnector($token, $accountId);
+    }
+
+    protected function reportMissingCloudflareCredentials(): void
+    {
+        $message = 'CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set';
+
+        if (in_array('jsonFail', get_class_methods($this), true)) {
+            $this->jsonFail($message);
+
+            return;
+        }
+
+        $this->error($message);
     }
 
     protected function maskSecret(string $value): string

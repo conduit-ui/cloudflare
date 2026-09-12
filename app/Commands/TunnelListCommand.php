@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
+use App\Commands\Concerns\OutputsJson;
 use LaravelZero\Framework\Commands\Command;
 
 class TunnelListCommand extends Command
 {
     use InteractsWithCloudflare;
+    use OutputsJson;
 
     protected $signature = 'tunnel:list
         {--json : Output as JSON}';
@@ -19,20 +21,20 @@ class TunnelListCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
+        if ($connector === null) {
+            return self::FAILURE;
+        }
+
         $response = $connector->tunnels()->list();
 
         if (! $response->successful()) {
-            $this->error('Failed to list tunnels: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to list tunnels: '.$response->body());
         }
 
         $tunnels = $response->json('result', []);
 
-        if ($this->option('json')) {
-            $this->line(json_encode($tunnels, JSON_PRETTY_PRINT));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($tunnels);
         }
 
         if (empty($tunnels)) {
