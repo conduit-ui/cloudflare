@@ -34,6 +34,10 @@ it('fails non-interactively when account id is missing', function () {
 });
 
 it('fails when token verification fails', function () {
+    $path = base_path('.env');
+    $original = file_exists($path) ? file_get_contents($path) : null;
+    file_put_contents($path, "CLOUDFLARE_API_TOKEN=keep-me\n");
+
     MockClient::global([
         VerifyToken::class => MockResponse::make([
             'success' => false,
@@ -43,13 +47,23 @@ it('fails when token verification fails', function () {
         ], 401),
     ]);
 
-    $this->artisan('setup', [
-        '--token' => 'bad-token',
-        '--account-id' => 'account-123',
-        '--non-interactive' => true,
-    ])
-        ->expectsOutputToContain('Invalid API Token')
-        ->assertExitCode(1);
+    try {
+        $this->artisan('setup', [
+            '--token' => 'bad-token',
+            '--account-id' => 'account-123',
+            '--non-interactive' => true,
+        ])
+            ->expectsOutputToContain('Invalid API Token')
+            ->assertExitCode(1);
+
+        expect(file_get_contents($path))->toBe("CLOUDFLARE_API_TOKEN=keep-me\n");
+    } finally {
+        if ($original === null) {
+            @unlink($path);
+        } else {
+            file_put_contents($path, $original);
+        }
+    }
 });
 
 it('returns json failure payload when verification fails', function () {
@@ -94,7 +108,8 @@ it('writes credentials to .env after a successful token verify', function () {
             '--non-interactive' => true,
             '--json' => true,
         ]);
-        $payload = json_decode(Artisan::output(), true);
+        $output = Artisan::output();
+        $payload = json_decode($output, true);
         $env = file_get_contents($path);
 
         expect($status)->toBe(0)
@@ -102,6 +117,7 @@ it('writes credentials to .env after a successful token verify', function () {
             ->and($payload['success'])->toBeTrue()
             ->and($payload['message'])->toBe('Cloudflare credentials saved to .env')
             ->and($payload['account_id'])->toBe('account-123')
+            ->and($output)->not->toContain('cf_good_token')
             ->and($env)->toContain('CLOUDFLARE_API_TOKEN=cf_good_token')
             ->and($env)->toContain('CLOUDFLARE_ACCOUNT_ID=account-123');
     } finally {
