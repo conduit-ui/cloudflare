@@ -8,6 +8,7 @@ use App\Integrations\Cloudflare\CloudflareConnector;
 use App\Integrations\Cloudflare\Requests\Dns\CreateDnsRecord;
 use App\Integrations\Cloudflare\Requests\Dns\DeleteDnsRecord;
 use App\Integrations\Cloudflare\Requests\Dns\ListDnsRecords;
+use App\Integrations\Cloudflare\Requests\Dns\UpdateDnsRecord;
 use Saloon\Http\Response;
 
 class DnsResource
@@ -35,6 +36,25 @@ class DnsResource
     ): Response {
         return $this->connector->send(new CreateDnsRecord(
             $this->zoneId,
+            $type,
+            $name,
+            $content,
+            $proxied,
+            $ttl
+        ));
+    }
+
+    public function update(
+        string $recordId,
+        string $type,
+        string $name,
+        string $content,
+        bool $proxied = false,
+        int $ttl = 1
+    ): Response {
+        return $this->connector->send(new UpdateDnsRecord(
+            $this->zoneId,
+            $recordId,
             $type,
             $name,
             $content,

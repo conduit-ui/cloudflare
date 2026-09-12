@@ -72,11 +72,17 @@ Pass `--json` for a stable envelope on stdout: `{"ok":true,"data":...}` on succe
 ./cf dns:list jordanpartridge.us --type=A   # Filter by type
 ./cf dns:create <zone> A api 1.2.3.4        # Create A record
 ./cf dns:create <zone> CNAME www example.com --proxied
+./cf dns:update <zone> <id> A api 5.6.7.8   # Update record (PUT)
+./cf dns:update <zone> <id> A api 5.6.7.8 --proxied --ttl=300 --json
+./cf dns:delete <zone> <id>                 # Delete record (prompts)
+./cf dns:delete <zone> <id> --force --json  # Skip confirmation
 ```
 
 ### Tunnels
 ```bash
 ./cf tunnel:list              # List all tunnels
+./cf tunnel:get <id>          # Get tunnel details
+./cf tunnel:get <id> --json
 ./cf tunnel:create <name>     # Create tunnel (prints token/credentials)
 ./cf tunnel:expose <name> [hostname] [url]  # Create + route + cloudflared steps
 ./cf tunnel:delete <id>       # Delete tunnel
