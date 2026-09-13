@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 use App\Integrations\Cloudflare\CloudflareConnector;
 
-it('resolves the Cloudflare API base URL and auth header', function () {
+it('resolves the Cloudflare API base URL and account id', function () {
     $connector = new CloudflareConnector('secret-token', 'acct-123');
 
     expect($connector->resolveBaseUrl())->toBe('https://api.cloudflare.com/client/v4')
         ->and($connector->getAccountId())->toBe('acct-123');
+});
+
+it('sets bearer authorization and json content-type headers', function () {
+    $connector = new CloudflareConnector('secret-token', 'acct-123');
 
     $method = new ReflectionMethod(CloudflareConnector::class, 'defaultHeaders');
     $headers = $method->invoke($connector);
