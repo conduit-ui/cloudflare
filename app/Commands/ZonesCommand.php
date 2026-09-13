@@ -29,7 +29,7 @@ class ZonesCommand extends Command
         $response = $connector->zones()->list($this->option('name'));
 
         if (! $response->successful()) {
-            return $this->jsonFail('Failed to list zones: '.$response->body());
+            return $this->jsonFail('Failed to list zones: '.$this->formatApiError($response));
         }
 
         $zones = $response->json('result', []);

@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Commands;
 
-use App\Integrations\Cloudflare\CloudflareConnector;
+use App\Commands\Concerns\InteractsWithCloudflare;
+use App\Commands\Concerns\OutputsJson;
 use LaravelZero\Framework\Commands\Command;
 
 class DnsUpdateCommand extends Command
 {
+    use InteractsWithCloudflare;
+    use OutputsJson;
+
     protected $signature = 'dns:update
         {zone : Zone ID or domain name}
         {id : DNS record ID to update}
@@ -24,20 +28,17 @@ class DnsUpdateCommand extends Command
     public function handle(): int
     {
         $connector = $this->getConnector();
-        $zone = (string) $this->argument('zone');
-
-        // If zone looks like a domain, resolve it to ID
-        if (! preg_match('/^[a-f0-9]{32}$/', $zone)) {
-            $zoneId = $this->resolveZoneId($connector, $zone);
-            if (! $zoneId) {
-                $this->error("Zone not found: {$zone}");
-
-                return self::FAILURE;
-            }
-            $zone = $zoneId;
+        if ($connector === null) {
+            return self::FAILURE;
         }
 
-        $response = $connector->dns($zone)->update(
+        $zone = (string) $this->argument('zone');
+        $zoneId = $this->resolveZoneId($connector, $zone);
+        if (! $zoneId) {
+            return $this->jsonFail("Zone not found: {$zone}");
+        }
+
+        $response = $connector->dns($zoneId)->update(
             (string) $this->argument('id'),
             (string) $this->argument('type'),
             (string) $this->argument('name'),
@@ -47,17 +48,13 @@ class DnsUpdateCommand extends Command
         );
 
         if (! $response->successful()) {
-            $this->error('Failed to update DNS record: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to update DNS record: '.$this->formatApiError($response));
         }
 
         $record = $response->json('result');
 
-        if ($this->option('json')) {
-            $this->line(json_encode($record, JSON_PRETTY_PRINT));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($record);
         }
 
         $this->info('DNS record updated successfully!');
@@ -71,30 +68,5 @@ class DnsUpdateCommand extends Command
         ]);
 
         return self::SUCCESS;
-    }
-
-    protected function resolveZoneId(CloudflareConnector $connector, string $name): ?string
-    {
-        $response = $connector->zones()->list($name);
-        if ($response->successful()) {
-            $zones = $response->json('result', []);
-
-            return $zones[0]['id'] ?? null;
-        }
-
-        return null;
-    }
-
-    protected function getConnector(): CloudflareConnector
-    {
-        $token = env('CLOUDFLARE_API_TOKEN');
-        $accountId = env('CLOUDFLARE_ACCOUNT_ID');
-
-        if (! $token) {
-            $this->error('CLOUDFLARE_API_TOKEN not set');
-            exit(1);
-        }
-
-        return new CloudflareConnector($token, $accountId);
     }
 }
