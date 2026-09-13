@@ -39,7 +39,7 @@ class TunnelExposeCommand extends Command
         $response = $connector->tunnels()->create($name);
 
         if (! $response->successful()) {
-            return $this->jsonFail('Failed to create tunnel: '.$response->body());
+            return $this->jsonFail('Failed to create tunnel: '.$this->formatApiError($response));
         }
 
         $tunnel = $response->json('result') ?? [];
