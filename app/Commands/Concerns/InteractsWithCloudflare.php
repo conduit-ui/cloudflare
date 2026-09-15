@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Commands\Concerns;
 
 use App\Integrations\Cloudflare\CloudflareConnector;
+use Saloon\Http\Response;
 
 trait InteractsWithCloudflare
 {
@@ -144,5 +145,46 @@ trait InteractsWithCloudflare
         }
 
         return null;
+    }
+
+    /**
+     * Resolve a zone ID or domain name to a zone ID.
+     */
+    protected function resolveZoneId(CloudflareConnector $connector, string $zone): ?string
+    {
+        if (preg_match('/^[a-f0-9]{32}$/', $zone) === 1) {
+            return $zone;
+        }
+
+        $response = $connector->zones()->list($zone);
+
+        if ($response->successful()) {
+            $zones = $response->json('result', []);
+
+            return $zones[0]['id'] ?? null;
+        }
+
+        return null;
+    }
+
+    protected function truncate(string $value, int $length): string
+    {
+        return strlen($value) > $length
+            ? substr($value, 0, $length - 3).'...'
+            : $value;
+    }
+
+    /**
+     * Prefer Cloudflare errors.0.message when present.
+     */
+    protected function formatApiError(Response $response): string
+    {
+        $message = $response->json('errors.0.message');
+
+        if (is_string($message) && $message !== '') {
+            return $message;
+        }
+
+        return $response->body();
     }
 }

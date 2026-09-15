@@ -28,7 +28,7 @@ class TunnelListCommand extends Command
         $response = $connector->tunnels()->list();
 
         if (! $response->successful()) {
-            return $this->jsonFail('Failed to list tunnels: '.$response->body());
+            return $this->jsonFail('Failed to list tunnels: '.$this->formatApiError($response));
         }
 
         $tunnels = $response->json('result', []);

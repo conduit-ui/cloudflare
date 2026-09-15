@@ -6,7 +6,6 @@ namespace App\Commands;
 
 use App\Commands\Concerns\InteractsWithCloudflare;
 use App\Commands\Concerns\OutputsJson;
-use App\Integrations\Cloudflare\CloudflareConnector;
 use LaravelZero\Framework\Commands\Command;
 
 class DnsCreateCommand extends Command
@@ -32,17 +31,13 @@ class DnsCreateCommand extends Command
             return self::FAILURE;
         }
 
-        $zone = $this->argument('zone');
-
-        if (! preg_match('/^[a-f0-9]{32}$/', $zone)) {
-            $zoneId = $this->resolveZoneId($connector, $zone);
-            if (! $zoneId) {
-                return $this->jsonFail("Zone not found: {$zone}");
-            }
-            $zone = $zoneId;
+        $zone = (string) $this->argument('zone');
+        $zoneId = $this->resolveZoneId($connector, $zone);
+        if (! $zoneId) {
+            return $this->jsonFail("Zone not found: {$zone}");
         }
 
-        $response = $connector->dns($zone)->create(
+        $response = $connector->dns($zoneId)->create(
             $this->argument('type'),
             $this->argument('name'),
             $this->argument('content'),
@@ -51,7 +46,7 @@ class DnsCreateCommand extends Command
         );
 
         if (! $response->successful()) {
-            return $this->jsonFail('Failed to create DNS record: '.$response->body());
+            return $this->jsonFail('Failed to create DNS record: '.$this->formatApiError($response));
         }
 
         $record = $response->json('result');
@@ -70,17 +65,5 @@ class DnsCreateCommand extends Command
         ]);
 
         return self::SUCCESS;
-    }
-
-    protected function resolveZoneId(CloudflareConnector $connector, string $name): ?string
-    {
-        $response = $connector->zones()->list($name);
-        if ($response->successful()) {
-            $zones = $response->json('result', []);
-
-            return $zones[0]['id'] ?? null;
-        }
-
-        return null;
     }
 }

@@ -44,7 +44,7 @@ class TunnelDeleteCommand extends Command
         $response = $connector->tunnels()->delete($tunnelId);
 
         if (! $response->successful()) {
-            return $this->jsonFail('Failed to delete tunnel: '.$response->body());
+            return $this->jsonFail('Failed to delete tunnel: '.$this->formatApiError($response));
         }
 
         if ($this->wantsJson()) {

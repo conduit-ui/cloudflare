@@ -78,8 +78,8 @@ it('deletes a dns record with --force and --json', function () {
     $payload = decodeCommandJson(Artisan::output());
 
     expect($exit)->toBe(0)
-        ->and($payload)->toHaveKey('id')
-        ->and($payload['id'])->toBe($recordId);
+        ->and($payload['ok'])->toBeTrue()
+        ->and($payload['data']['id'])->toBe($recordId);
 
     $mock->assertSent(DeleteDnsRecord::class);
 });
@@ -154,12 +154,13 @@ it('gets a tunnel and supports --json', function () {
     $payload = decodeCommandJson(Artisan::output());
 
     expect($exit)->toBe(0)
-        ->and($payload['id'])->toBe($tunnelId)
-        ->and($payload['name'])->toBe('my-app')
-        ->and($payload['status'])->toBe('healthy')
-        ->and($payload['created_at'])->toBe('2024-01-15T12:00:00Z')
-        ->and($payload['connections'])->toHaveCount(1)
-        ->and($payload['connections'][0]['id'])->toBe('c1');
+        ->and($payload['ok'])->toBeTrue()
+        ->and($payload['data']['id'])->toBe($tunnelId)
+        ->and($payload['data']['name'])->toBe('my-app')
+        ->and($payload['data']['status'])->toBe('healthy')
+        ->and($payload['data']['created_at'])->toBe('2024-01-15T12:00:00Z')
+        ->and($payload['data']['connections'])->toHaveCount(1)
+        ->and($payload['data']['connections'][0]['id'])->toBe('c1');
 
     $mock->assertSent(GetTunnel::class);
 });

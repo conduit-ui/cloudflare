@@ -31,17 +31,13 @@ class TunnelGetCommand extends Command
         $response = $connector->tunnels()->get($tunnelId);
 
         if (! $response->successful()) {
-            $this->error('Failed to get tunnel: '.$response->body());
-
-            return self::FAILURE;
+            return $this->jsonFail('Failed to get tunnel: '.$this->formatApiError($response));
         }
 
         $tunnel = $response->json('result');
 
-        if ($this->option('json')) {
-            $this->line(json_encode($tunnel, JSON_PRETTY_PRINT));
-
-            return self::SUCCESS;
+        if ($this->wantsJson()) {
+            return $this->jsonSuccess($tunnel);
         }
 
         $this->table(['Field', 'Value'], [
