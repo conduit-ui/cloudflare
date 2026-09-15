@@ -1,10 +1,15 @@
 {
     "name": "conduit-ui/cloudflare",
-    "description": "Cloudflare management CLI for the Conduit agent ecosystem",
+    "description": "Cloudflare zones, DNS, and tunnel CLI for Conduit agents (Laravel Zero)",
     "keywords": [
+        "agents",
         "cli",
         "cloudflare",
-        "conduit-ui"
+        "conduit",
+        "conduit-ui",
+        "dns",
+        "laravel-zero",
+        "tunnel"
     ],
     "homepage": "https://github.com/conduit-ui/cloudflare",
     "type": "project",
