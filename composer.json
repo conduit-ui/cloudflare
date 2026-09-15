@@ -53,6 +53,10 @@
             "php": "8.3.33"
         }
     },
+    "scripts": {
+        "test": "pest",
+        "lint": "pint --test"
+    },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "bin": [
