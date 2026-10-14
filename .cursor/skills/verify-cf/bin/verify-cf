@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# Helpers for the verify-cf skill. Invoke from anywhere; resolves the repo root.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# .cursor/skills/verify-cf → repository root
+REPO_ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"
+
+CF="${CF_BIN:-$REPO_ROOT/cf}"
+EVIDENCE_ROOT="${CF_VERIFY_EVIDENCE:-$SKILL_DIR/artifacts}"
+RUN_ID="${CF_VERIFY_RUN_ID:-$(date +%Y%m%dT%H%M%S)-$$}"
+RUN_DIR="$EVIDENCE_ROOT/$RUN_ID"
+ISOLATE_ROOT="${CF_VERIFY_HOME:-/tmp/cf-verify-$RUN_ID}"
+
+usage() {
+  cat <<EOF
+Usage: verify-cf <command> [args]
+
+Commands:
+  launch                 Ensure PHP/Composer deps; print ready marker
+  doctor                 Read-only health check (exit 0 only if driveable)
+  drive <cmd...>         Run ./cf with args; capture exit/stdout/stderr under artifacts
+  evidence-dir           Print this run's evidence directory
+  cleanup                Remove isolate home created by this run (keeps evidence)
+  isolate-setup          Create disposable copy for setup/.env mutation proofs
+
+Env:
+  CF_BIN                 Path to cf entrypoint (default: <repo>/cf)
+  CF_VERIFY_EVIDENCE     Evidence root (default: skill artifacts/)
+  CF_VERIFY_RUN_ID       Stable run id (default: timestamp-pid)
+  CF_VERIFY_HOME         Disposable home for isolate-setup
+  CLOUDFLARE_API_TOKEN   Optional live credentials (process env preferred)
+  CLOUDFLARE_ACCOUNT_ID  Optional live credentials
+EOF
+}
+
+ensure_run_dir() {
+  mkdir -p "$RUN_DIR"
+}
+
+cmd_launch() {
+  if ! command -v php >/dev/null; then
+    echo "doctor-fail: php not on PATH" >&2
+    exit 1
+  fi
+  php_ver="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')"
+  if [[ "$(printf '%s\n' "$php_ver" "8.3" | sort -V | head -n1)" != "8.3" ]]; then
+    echo "doctor-fail: need PHP >= 8.3 (got $php_ver)" >&2
+    exit 1
+  fi
+  if [[ ! -f "$REPO_ROOT/vendor/autoload.php" ]]; then
+    (cd "$REPO_ROOT" && composer install --no-interaction)
+  fi
+  if [[ ! -x "$CF" && -f "$CF" ]]; then
+    chmod +x "$CF"
+  fi
+  if [[ ! -f "$CF" ]]; then
+    echo "doctor-fail: missing cf entrypoint at $CF" >&2
+    exit 1
+  fi
+  # Ready = usable CLI, not merely that PHP starts.
+  out="$("$CF" list 2>&1)" || {
+    echo "doctor-fail: cf list failed" >&2
+    echo "$out" >&2
+    exit 1
+  }
+  if ! grep -qE '^[[:space:]]*zones[[:space:]]' <<<"$out"; then
+    echo "doctor-fail: cf list did not advertise zones" >&2
+    echo "$out" >&2
+    exit 1
+  fi
+  ensure_run_dir
+  echo "verify-cf ready repo=$REPO_ROOT run=$RUN_ID evidence=$RUN_DIR"
+}
+
+cmd_doctor() {
+  local fail=0
+  echo "repo=$REPO_ROOT"
+  echo "cf=$CF"
+  echo "run_id=$RUN_ID"
+  echo "evidence=$RUN_DIR"
+  if ! command -v php >/dev/null; then
+    echo "php=MISSING"; fail=1
+  else
+    echo "php=$(php -v | head -n1)"
+  fi
+  if [[ -f "$REPO_ROOT/vendor/autoload.php" ]]; then
+    echo "vendor=ok"
+  else
+    echo "vendor=MISSING"; fail=1
+  fi
+  if [[ -f "$CF" ]]; then
+    echo "entrypoint=ok"
+  else
+    echo "entrypoint=MISSING"; fail=1
+  fi
+  if list_out="$("$CF" list 2>&1)"; then
+    if grep -qE '^[[:space:]]*zones[[:space:]]' <<<"$list_out"; then
+      echo "cf_list=ok"
+    else
+      echo "cf_list=UNEXPECTED"; fail=1
+    fi
+  else
+    echo "cf_list=FAIL"; fail=1
+  fi
+  if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+    echo "live_creds=present"
+    # Do not treat API failure as doctor failure — token may be invalid; drive journeys decide.
+    if zones_out="$(env CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" CLOUDFLARE_ACCOUNT_ID="$CLOUDFLARE_ACCOUNT_ID" "$CF" zones --json 2>&1)"; then
+      echo "zones_json=ok"
+    else
+      echo "zones_json=error"
+      echo "zones_json_body=$(echo "$zones_out" | tr '\n' ' ' | head -c 200)"
+    fi
+  else
+    echo "live_creds=absent (read-only missing-creds journeys only)"
+  fi
+  # Refuse to claim ownership of a foreign long-lived process: this CLI has none.
+  echo "isolation=process-local (no daemon); setup mutations require isolate-setup"
+  exit "$fail"
+}
+
+cmd_drive() {
+  if [[ $# -lt 1 ]]; then
+    echo "drive requires cf arguments, e.g. verify-cf drive zones --json" >&2
+    exit 2
+  fi
+  ensure_run_dir
+  local stamp slug
+  stamp="$(date +%H%M%S)"
+  slug="$(printf '%s' "$*" | tr -c 'A-Za-z0-9._:-' '_' | cut -c1-80)"
+  local base="$RUN_DIR/${stamp}_${slug}"
+  local stdout_f="${base}.stdout"
+  local stderr_f="${base}.stderr"
+  local meta_f="${base}.meta.json"
+  set +e
+  "$CF" "$@" >"$stdout_f" 2>"$stderr_f"
+  local code=$?
+  set -e
+  python3 - "$meta_f" "$code" "$CF" "$@" <<'PY'
+import json, sys
+meta_path = sys.argv[1]
+code = int(sys.argv[2])
+argv = sys.argv[3:]
+with open(meta_path, "w", encoding="utf-8") as f:
+    json.dump({"exit_code": code, "argv": argv}, f, indent=2)
+    f.write("\n")
+PY
+  echo "exit=$code stdout=$stdout_f stderr=$stderr_f meta=$meta_f"
+  return "$code"
+}
+
+cmd_isolate_setup() {
+  # Disposable tree so setup can write .env without touching the developer's project .env
+  rm -rf "$ISOLATE_ROOT"
+  mkdir -p "$ISOLATE_ROOT"
+  # Copy app sources; share vendor via symlink to keep isolate cheap.
+  for item in app bootstrap config cf composer.json composer.lock box.json; do
+    if [[ -e "$REPO_ROOT/$item" ]]; then
+      cp -a "$REPO_ROOT/$item" "$ISOLATE_ROOT/"
+    fi
+  done
+  ln -s "$REPO_ROOT/vendor" "$ISOLATE_ROOT/vendor"
+  chmod +x "$ISOLATE_ROOT/cf"
+  ensure_run_dir
+  echo "$ISOLATE_ROOT" >"$RUN_DIR/isolate_home.txt"
+  echo "isolate=$ISOLATE_ROOT"
+}
+
+cmd_cleanup() {
+  if [[ -d "$ISOLATE_ROOT" ]]; then
+    rm -rf "$ISOLATE_ROOT"
+    echo "removed isolate $ISOLATE_ROOT"
+  else
+    echo "no isolate at $ISOLATE_ROOT"
+  fi
+  # Never delete evidence.
+  echo "evidence retained at $RUN_DIR"
+}
+
+cmd_evidence_dir() {
+  ensure_run_dir
+  echo "$RUN_DIR"
+}
+
+main() {
+  local cmd="${1:-}"
+  shift || true
+  case "$cmd" in
+    launch) cmd_launch "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    drive) cmd_drive "$@" ;;
+    isolate-setup) cmd_isolate_setup "$@" ;;
+    cleanup) cmd_cleanup "$@" ;;
+    evidence-dir) cmd_evidence_dir "$@" ;;
+    -h|--help|help|"") usage; [[ -n "$cmd" ]] || exit 2 ;;
+    *) echo "unknown command: $cmd" >&2; usage; exit 2 ;;
+  esac
+}
+
+main "$@"
